@@ -1,6 +1,7 @@
 package main
 
 import (
+
 	"context"
 	"flag"
 	"fmt"
@@ -25,8 +26,8 @@ func createRedisClient() *redis.Client {
 func main() {
 	var numPublishers, numSubscribers, numMessages int
 	var debug bool
-	flag.IntVar(&numPublishers, "publishers", 10, "Number of publishers")
-	flag.IntVar(&numSubscribers, "subscribers", 100, "Number of subscribers")
+	flag.IntVar(&numPublishers, "publishers", 1, "Number of publishers")
+	flag.IntVar(&numSubscribers, "subscribers", 1, "Number of subscribers")
 	flag.IntVar(&numMessages, "messages", 1000, "Number of messages per publisher")
 	flag.BoolVar(&debug, "debug", false, "Enable debug mode")
 	flag.Parse()

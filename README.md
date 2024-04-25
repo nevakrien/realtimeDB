@@ -1,5 +1,17 @@
 # realtimeDB
-trying my hand at extremly low latancy dbs
+trying my hand at extremly low latancy dbs for linux
+
+# protocol
+all strings are send as a uint32 of length folowed by their charchters. 
+
+a comunication starts with the client sending a protocol code of 1 byte
+curently we have
+0x00 : subscribe (network)
+0x01 : publish (network)
+
+subscribe connections can subscribe or unsubscribe by using:
+subscribe(0x00 + string)
+unsubscribe(0x00 + string)
 
 # benchmarking 
 benchmarking 

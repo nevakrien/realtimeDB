@@ -7,20 +7,20 @@
 void subscribe_to_channel(int sockfd, const char *channel_name) {
     char op_code = 0x00;  // Subscribe operation
     write(sockfd, &op_code, sizeof(op_code));
-    send_string(sockfd, channel_name);
+    send_c_string(sockfd, channel_name);
 }
 
 // Function to unsubscribe from a channel
 void unsubscribe_from_channel(int sockfd, const char *channel_name) {
     char op_code = 0x01;  // Unsubscribe operation
     write(sockfd, &op_code, sizeof(op_code));
-    send_string(sockfd, channel_name);
+    send_c_string(sockfd, channel_name);
 }
 
 // Example function to publish a message
 void publish_message(int sockfd, const char *channel, const char *message) {
-    send_string(sockfd, channel);
-    send_string(sockfd, message);
+    send_c_string(sockfd, channel);
+    send_c_string(sockfd, message);
 }
 
 

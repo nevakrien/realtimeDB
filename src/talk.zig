@@ -99,7 +99,7 @@ pub fn readString(socket_fd: i32,buffer: *?[]u8 , allocFn: basics.AllocFn,compti
         len=@intCast(buffer.*.?.len);
     }
 
-    const readbytes = os.read(socket_fd, @ptrCast(&len),len);
+    const readbytes = os.read(socket_fd, @ptrCast(buffer.*),len);
     return buffer.*.?[readbytes..];
 }
 
@@ -132,7 +132,7 @@ test "readString functionality and error handling" {
     var buffer: ?[]u8 = null;
     const result = try readString(tmp_file.handle, &buffer, alloc, true);
     try std.testing.expectEqual(result.len,0);
-    try std.testing.expectEqualStrings(sample_data, buffer.?);
+    try std.testing.expectEqualSlices(u8,sample_data, buffer.?);
 
     // Test handling insufficient data causing WouldBlock error
     try basics.truncateFile(tmp_file.handle,0);

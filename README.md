@@ -1,6 +1,8 @@
 # realtimeDB
 trying my hand at extremly low latancy dbs for linux
 
+zig test src/talk.zig --library c
+
 # protocol
 all strings are send as a uint32 of length folowed by their charchters. 
 

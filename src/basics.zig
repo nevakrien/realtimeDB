@@ -10,7 +10,7 @@ pub fn general_alloc(size: usize) error{OutOfMemory}![]u8 {
         return gpa.alloc(u8, size) catch error.OutOfMemory;
 }
 
-pub fn general_free(mem: ?[*]u8) void{
+pub fn general_free(mem: ?[]u8) void{
     gpa.free(mem);
 }
 

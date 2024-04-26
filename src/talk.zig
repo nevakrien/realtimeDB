@@ -6,6 +6,8 @@ const basics = @import("basics.zig");
 
 const c = @cImport({
     @cInclude("sys/ioctl.h"); // Include the C header that contains FIONREAD
+    @cInclude("unistd.h"); //read
+    //@cInclude("errno.h");
 });
 
 
@@ -59,18 +61,29 @@ pub fn readByte(socket_fd: i32) ReadErrors!u8{
     return buffer[0];
 }
 
+fn printErrno() void{
+    std.debug.print("\nerror {}",.{std.c._errno().*});
+}
+
 //reads the size of the string making a buffer.
-pub fn readString(socket_fd: i32,buffer: ?*[*]u8 , allocFn: basics.AllocFn,comptime networkByteOrder: bool) ( ReadErrors || basics.MemoryError || error{OsError})![]u8{
+pub fn readString(socket_fd: i32,buffer: *?[]u8 , allocFn: basics.AllocFn,comptime networkByteOrder: bool) ( ReadErrors || basics.MemoryError || error{OsError})![]u8{
     var len: u32  = undefined;
-    if(buffer==null){
+    if(buffer.*==null){
         var available: usize = 0;
         if(c.ioctl(socket_fd, c.FIONREAD, &available)<0){
+            std.debug.print("\nerror with FIONREAD\n", .{});
             return error.OsError;
         }
 
         if (available < @sizeOf(u32)) return error.WouldBlock;
-
-        if(os.read(socket_fd, @ptrCast(&len),@sizeOf(u32)) != @sizeOf(u32)){
+        
+        
+        const readbytes=c.read(socket_fd, @ptrCast(&len) ,@sizeOf(u32));
+        if( readbytes != @sizeOf(u32)){
+            printErrno();
+            //std.debug.print("modified val bytes: {}",.{lenptr[9]});
+            std.debug.print("\nExpected bytes: {}, Actual bytes read: {} and as a negative: {}\n", .{@sizeOf(u32), readbytes,0-%readbytes});
+           // std.debug.print("\nread size did not match what the OS told us it would be\n", .{});
             return error.OsError;
         }
 
@@ -78,13 +91,16 @@ pub fn readString(socket_fd: i32,buffer: ?*[*]u8 , allocFn: basics.AllocFn,compt
             len=std.mem.bigToNative(u32, len);
         }
 
-        *buffer = try allocFn(len);
+        //std.debug.print("length is:{}\n",.{len});
+
+        buffer.* = try allocFn(len);
     }
     else{
-        len=buffer.?.len;
+        len=@intCast(buffer.*.?.len);
     }
-    const readbytes = os.read(socket_fd, &len,len);
-    return buffer[readbytes..];
+
+    const readbytes = os.read(socket_fd, @ptrCast(&len),len);
+    return buffer.*.?[readbytes..];
 }
 
 
@@ -93,11 +109,11 @@ test "readString functionality and error handling" {
     const alloc=basics.general_alloc;
 
 
-    const tmp_file_path = "test_temp_file";
+    const tmp_file_path = "test_temp_file.tmp";
 
     // Create and write to a temporary file to simulate socket data
-    var tmp_file = try std.fs.cwd().createFile(tmp_file_path, .{});
-    defer tmp_file.close();
+    var tmp_file = try std.fs.cwd().createFile(tmp_file_path, .{.read = true,});
+    //defer tmp_file.close();
     //defer std.fs.cwd().deleteFile(tmp_file_path);
 
     // Write sample data in network byte order if needed
@@ -113,9 +129,10 @@ test "readString functionality and error handling" {
     try tmp_file.seekTo(0);
 
     // Test reading string from file
-    var buffer: ?*[*]u8 = null;
-    const result = try readString(tmp_file.handle, buffer, alloc, true);
-    try std.testing.expectEqualStrings(sample_data, result);
+    var buffer: ?[]u8 = null;
+    const result = try readString(tmp_file.handle, &buffer, alloc, true);
+    try std.testing.expectEqual(result.len,0);
+    try std.testing.expectEqualStrings(sample_data, buffer.?);
 
     // Test handling insufficient data causing WouldBlock error
     try basics.truncateFile(tmp_file.handle,0);
@@ -124,7 +141,7 @@ test "readString functionality and error handling" {
     try tmp_file.writeAll(lenBytes[0..2]); // Write only part of the length
     try tmp_file.seekTo(0);
     buffer = null; // Reset buffer
-    const readResult = readString(tmp_file.handle, buffer, alloc, true);
+    const readResult = readString(tmp_file.handle, &buffer, alloc, true);
     //const error = readResult catch |err| err;
     try std.testing.expectEqual(readResult, error.WouldBlock); // Expect WouldBlock error
 }
